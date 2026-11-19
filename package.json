@@ -1,0 +1,7 @@
+{
+  "name": "raindrop-notes",
+  "private": true,
+  "type": "module",
+  "scripts": { "sync": "node scripts/sync.mjs" },
+  "dependencies": { "playwright": "^1.49.0" }
+}
