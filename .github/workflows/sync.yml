@@ -32,6 +32,9 @@ jobs:
           RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
+          # Free tier (billing unlinked 2026-11-21). Remove these two lines if billing is re-linked.
+          GEMINI_PRICE_IN: "0"
+          GEMINI_PRICE_OUT: "0"
         run: node scripts/sync.mjs
 
       - name: Commit new notes
