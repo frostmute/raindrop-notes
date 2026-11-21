@@ -7,6 +7,11 @@ import { chromium } from "playwright";
 const RAINDROP_TOKEN = process.env.RAINDROP_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+// USD per 1M tokens (gemini-3.8-flash paid tier: $0.75/$3.75 through 2026-12-31, $1.50/$7.50 from 2027-01-01).
+const intro = new Date() < new Date("2027-01-01T00:00:00Z");
+const PRICE_IN = Number(process.env.GEMINI_PRICE_IN || (intro ? 0.75 : 1.5));
+const PRICE_OUT = Number(process.env.GEMINI_PRICE_OUT || (intro ? 3.75 : 7.5));
+const usageRows = [];
 const LOOKBACK_HOURS = Number(process.env.INITIAL_LOOKBACK_HOURS || 24);
 const MAX_PER_RUN = Number(process.env.MAX_PER_RUN || 25);
 const STATE_FILE = "state.json";
@@ -53,6 +58,13 @@ async function summarize(b) {
     return "";
   }
   const data = await res.json();
+  const u = data?.usageMetadata || {};
+  const inTok = u.promptTokenCount || 0;
+  const outTok = u.candidatesTokenCount || 0;
+  const thinkTok = u.thoughtsTokenCount || 0;
+  const cost = (inTok * PRICE_IN + (outTok + thinkTok) * PRICE_OUT) / 1e6;
+  usageRows.push({ title: b.title || b.link, inTok, outTok, thinkTok, cost });
+  console.log(`Gemini usage for ${b._id}: in=${inTok} out=${outTok} thinking=${thinkTok} cost=$${cost.toFixed(5)} (paid-tier rate)`);
   return data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("").trim() || "";
 }
 
@@ -128,8 +140,28 @@ async function main() {
   } finally {
     await browser.close();
   }
+  await writeUsageSummary();
   state.seen = [...seen].slice(-500);
   await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
+}
+
+async function writeUsageSummary() {
+  if (!usageRows.length) return;
+  const total = usageRows.reduce((a, r) => a + r.cost, 0);
+  console.log(`Gemini total this run: $${total.toFixed(5)} for ${usageRows.length} bookmark(s)`);
+  if (!process.env.GITHUB_STEP_SUMMARY) return;
+  const lines = [
+    `### Gemini usage (${GEMINI_MODEL}, $${PRICE_IN}/$${PRICE_OUT} per 1M in/out)`,
+    "",
+    "| Bookmark | Input | Output | Thinking | Cost |",
+    "| --- | ---: | ---: | ---: | ---: |",
+    ...usageRows.map((r) => `| ${String(r.title).replace(/\|/g, "/")} | ${r.inTok} | ${r.outTok} | ${r.thinkTok} | $${r.cost.toFixed(5)} |`),
+    `| **Total** | | | | **$${total.toFixed(5)}** |`,
+    "",
+    "_Cost shown at paid-tier rates; it's $0 if the key is on the free tier._",
+    "",
+  ];
+  await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, lines.join("\n"));
 }
 
 main().catch((e) => {
