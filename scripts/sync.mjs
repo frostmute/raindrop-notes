@@ -45,14 +45,22 @@ async function summarize(b) {
   const prompt =
     `Summarize this bookmarked web page in 3-5 sentences of plain prose.\n\n` +
     `Title: ${b.title || ""}\nURL: ${b.link || ""}\nExcerpt: ${b.excerpt || "(none)"}`;
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-    }
-  );
+  // Free tier gets 429/503 under load: retry with backoff before giving up.
+  const waits = [0, 10e3, 30e3, 60e3];
+  let res;
+  for (let i = 0; i < waits.length; i++) {
+    if (waits[i]) await new Promise((r) => setTimeout(r, waits[i]));
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      }
+    );
+    if (res.ok || ![429, 500, 502, 503, 504].includes(res.status)) break;
+    console.warn(`Gemini ${res.status} (attempt ${i + 1}/${waits.length})`);
+  }
   if (!res.ok) {
     console.warn(`Gemini ${res.status}: ${await res.text()}`);
     return "";
@@ -93,7 +101,13 @@ async function main() {
   const seen = new Set(state.seen || []);
   const bookmarks = (await fetchNewBookmarks(state.lastCreated)).filter((b) => !seen.has(b._id)).slice(0, MAX_PER_RUN);
   console.log(`New bookmarks: ${bookmarks.length}`);
-  if (!bookmarks.length) return;
+  state.pending = state.pending || [];
+  await backfillSummaries(state);
+  if (!bookmarks.length) {
+    await writeUsageSummary();
+    await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
+    return;
+  }
 
   const browser = await chromium.launch();
   try {
@@ -132,7 +146,12 @@ async function main() {
         b.note ? `## Note\n\n${b.note}\n` : "",
       ].join("\n");
 
-      await fs.writeFile(path.join(dir, `${slug(b.title)}-${b._id}.md`), md);
+      const file = path.join(dir, `${slug(b.title)}-${b._id}.md`);
+      await fs.writeFile(file, md);
+      if (!summary && GEMINI_API_KEY) {
+        state.pending.push({ id: b._id, title: b.title, link: b.link, excerpt: b.excerpt, file, tries: 1 });
+        console.log(`Summary for ${b._id} queued for retry next run`);
+      }
       seen.add(b._id);
       if (b.created > state.lastCreated) state.lastCreated = b.created;
       console.log(`Saved ${b._id}: ${b.title}`);
@@ -143,6 +162,29 @@ async function main() {
   await writeUsageSummary();
   state.seen = [...seen].slice(-500);
   await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2) + "\n");
+}
+
+// Retry summaries that failed on an earlier run (e.g. Gemini 503) and patch the note in place.
+async function backfillSummaries(state) {
+  const keep = [];
+  for (const p of state.pending) {
+    const summary = await summarize({ _id: p.id, title: p.title, link: p.link, excerpt: p.excerpt });
+    if (summary) {
+      try {
+        const md = await fs.readFile(p.file, "utf8");
+        const fixed = md.replace(/## Summary\n\n[\s\S]*?\n\n(?=## |$)/, `## Summary\n\n${summary}\n\n`);
+        await fs.writeFile(p.file, fixed);
+        console.log(`Backfilled summary for ${p.id}`);
+      } catch (e) {
+        console.warn(`Could not patch ${p.file}: ${e.message}`);
+      }
+    } else if ((p.tries || 1) < 10) {
+      keep.push({ ...p, tries: (p.tries || 1) + 1 });
+    } else {
+      console.warn(`Giving up on summary for ${p.id} after 10 runs`);
+    }
+  }
+  state.pending = keep;
 }
 
 async function writeUsageSummary() {
