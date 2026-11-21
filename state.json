@@ -5,14 +5,5 @@
     1937770873,
     1937912233
   ],
-  "pending": [
-    {
-      "id": 1937912233,
-      "title": "Characters - PixelLab",
-      "link": "https://www.pixellab.ai/create-character",
-      "excerpt": "Create and manage your AI-generated pixel art characters with PixelLab",
-      "file": "notes/2026/11/characters-pixellab-1937912233.md",
-      "tries": 1
-    }
-  ]
+  "pending": []
 }
