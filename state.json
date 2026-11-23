@@ -1,12 +1,40 @@
 {
-  "lastCreated": "2026-11-21T22:39:23.300Z",
+  "lastCreated": "2026-11-22T15:24:10.124Z",
   "seen": [
     1936789053,
     1937770873,
     1937912233,
     1938168728,
     1938176578,
-    1938586768
+    1938586768,
+    1938876049,
+    1939057930,
+    1939167676
   ],
-  "pending": []
+  "pending": [
+    {
+      "id": 1938876049,
+      "title": "boat dashboard",
+      "link": "https://boat.dev/dashboard?tab=sandboxes",
+      "excerpt": "",
+      "file": "notes/2026/11/boat-dashboard-1938876049.md",
+      "tries": 1
+    },
+    {
+      "id": 1939057930,
+      "title": "HolyArrs - one app instead of Sonarr, Radarr and the rest",
+      "link": "https://share.google/sGrKSmTyeRy5NR8B3",
+      "excerpt": "",
+      "file": "notes/2026/11/holyarrs-one-app-instead-of-sonarr-radarr-and-the-rest-1939057930.md",
+      "tries": 1
+    },
+    {
+      "id": 1939167676,
+      "title": "topoteretes/cognee: Cognee is the open-source AI memory platform for agents. Give your AI agents persistent long-term memory with small models for free",
+      "link": "https://github.com/topoteretes/cognee",
+      "excerpt": "Cognee is the open-source AI memory platform for agents. Give your AI agents persistent long-term memory across sessions with a self-hosted knowledge graph engine",
+      "file": "notes/2026/11/topoteretes-cognee-cognee-is-the-open-source-ai-memory-platf-1939167676.md",
+      "tries": 1
+    }
+  ]
 }
