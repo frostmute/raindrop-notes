@@ -1,0 +1,21 @@
+{% macro card(n, lazy=True, small=False) %}
+<article class="card{% if small %} card--sm{% endif %}" data-search="{{ (n.title ~ ' ' ~ n.domain ~ ' ' ~ n.tags|join(' ') ~ ' ' ~ n.summary_text ~ ' ' ~ n.excerpt)|lower }}">
+  <a class="card__link" href="{{ base }}b/{{ n.slug }}/" aria-label="{{ n.title }}">
+    <figure class="card__shot">
+      {% if n.rid in thumbs %}
+      {% set th = thumbs[n.rid] %}
+      <img src="{{ base }}thumbs/{{ th[0] }}" width="{{ th[1] }}" height="{{ th[2] }}" alt="Screenshot of {{ n.domain }}" {% if lazy %}loading="lazy" {% endif %}decoding="async">
+      {% else %}
+      <div class="noshot" aria-hidden="true"><span>404</span>no screenshot</div>
+      {% endif %}
+    </figure>
+    <div class="card__body">
+      <h2 class="card__title">{{ n.title }}</h2>
+      <p class="card__meta"><span class="dom">{{ n.domain }}</span><span class="sep">·</span><time datetime="{{ n.iso }}">{{ n.date }}</time></p>
+    </div>
+  </a>
+  {% if n.tags %}
+  <p class="tags">{% for t in n.tags %}<a class="tag" href="{{ base }}tags/{{ tag_slug(t) }}/">#{{ t }}</a>{% endfor %}</p>
+  {% endif %}
+</article>
+{% endmacro %}

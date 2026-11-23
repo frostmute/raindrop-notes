@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block cmd %}ls -t --screenshots{% endblock %}
+{% block main %}
+{% if tags %}
+<p class="tagstrip">{% for t, ns in tags %}<a class="tag" href="{{ base }}tags/{{ tag_slug(t) }}/">#{{ t }}<span class="dim">{{ ns|length }}</span></a>{% endfor %}<a class="tag tag--more" href="{{ base }}tags/">all tags →</a></p>
+{% endif %}
+<p class="status dim" id="status" aria-live="polite">total {{ notes|length }}</p>
+<section class="grid" id="grid">
+{% for n in notes %}{{ card(n, lazy=loop.index > 4) }}{% endfor %}
+</section>
+<p class="empty" id="empty" hidden>grep: no matches. <span class="dim">try another word.</span></p>
+{% endblock %}

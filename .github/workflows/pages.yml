@@ -1,0 +1,55 @@
+name: Publish site
+
+# Deploys on pushes to main that touch the site or the notes (e.g. edits from
+# Obsidian / Working Copy) and on manual runs. Bookmarks committed by the sync
+# workflow are deployed by its own `pages` job, because pushes made with
+# GITHUB_TOKEN don't trigger other workflows.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "notes/**"
+      - "screenshots/**"
+      - ".github/workflows/pages.yml"
+      - ".github/actions/build-site/**"
+  pull_request:
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+      - ".github/actions/build-site/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-site
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site/
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

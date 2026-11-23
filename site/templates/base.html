@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0d0b">
+<title>{% block title %}{{ site_title }}{% endblock %}</title>
+<meta name="description" content="{% block desc %}Frost's bookmarks: screenshotted, summarized, tagged.{% endblock %}">
+<link rel="preload" href="{{ base }}static/fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ base }}static/style.css?v={{ css_v }}">
+<link rel="alternate" type="application/atom+xml" title="{{ site_title }}" href="{{ base }}feed.xml">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230a0d0b'/%3E%3Ctext x='2' y='12' font-family='monospace' font-size='11' fill='%235af78e'%3E%3E_%3C/text%3E%3C/svg%3E">
+{% block head %}{% endblock %}
+</head>
+<body data-page="{{ page }}" data-base="{{ base }}">
+<a class="skip" href="#main">skip to content</a>
+<header class="top">
+  <div class="wrap top__row">
+    <a class="prompt" href="{{ base }}"><span class="host"><span class="u">frost</span><span class="dim">@</span><span class="h">raindrop</span><span class="dim">:</span></span><span class="p">~/bookmarks</span><span class="dim"> $</span></a>
+    <span class="cmd">{% block cmd %}ls{% endblock %}</span><span class="cursor" aria-hidden="true">▌</span>
+  </div>
+  <div class="wrap top__row top__nav">
+    <nav class="nav" aria-label="main">
+      <a href="{{ base }}"{% if page == 'index' %} aria-current="page"{% endif %}>[ls]</a>
+      <a href="{{ base }}tags/"{% if page in ('tags', 'tag') %} aria-current="page"{% endif %}>[tags]</a>
+      <a href="{{ base }}feed.xml">[rss]</a>
+    </nav>
+    <form class="search" role="search" action="{{ base }}" method="get" autocomplete="off">
+      <label for="q" class="search__label">grep -i</label>
+      <input id="q" name="q" type="search" placeholder="search  (/)" spellcheck="false" enterkeyhint="search">
+    </form>
+  </div>
+  <div class="wrap"><div id="results" class="results" hidden></div></div>
+</header>
+<main id="main" class="wrap">
+{% block main %}{% endblock %}
+</main>
+<footer class="foot wrap">
+  <p><span class="dim">#</span> {{ total }} bookmarks · {{ tag_count }} tags · built {{ built }}</p>
+  <p class="keys dim"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>enter</kbd> open · <kbd>/</kbd> search · <kbd>esc</kbd> clear · <kbd>t</kbd> tags · <kbd>g</kbd> home</p>
+</footer>
+<script src="{{ base }}static/app.js?v={{ js_v }}" defer></script>
+</body>
+</html>
