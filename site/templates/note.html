@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block title %}{{ n.title }} · {{ site_title }}{% endblock %}
+{% block desc %}{{ (n.summary_text or n.excerpt or n.title)[:160] }}{% endblock %}
+{% block head %}
+<link rel="canonical" href="{{ site_url }}/b/{{ n.slug }}/">
+<meta property="og:title" content="{{ n.title }}">
+<meta property="og:description" content="{{ (n.summary_text or n.excerpt)[:200] }}">
+{% if n.shot %}<meta property="og:image" content="{{ site_url }}/screenshots/{{ n.shot }}">{% endif %}
+{% endblock %}
+{% block cmd %}cat {{ n.slug[:28] }}{% if n.slug|length > 28 %}…{% endif %}.md{% endblock %}
+{% block main %}
+<article class="note">
+  {% if n.shot %}
+  <a class="note__shot" href="{{ base }}screenshots/{{ n.shot }}" title="open full-size screenshot">
+    <img src="{{ base }}screenshots/{{ n.shot }}" width="1280" height="800" alt="Screenshot of {{ n.title }}" decoding="async" fetchpriority="high">
+  </a>
+  {% else %}
+  <div class="note__shot noshot"><span>404</span>no screenshot captured</div>
+  {% endif %}
+  <h1 class="note__title">{{ n.title }}</h1>
+  <p class="note__open"><a href="{{ n.url }}" rel="noopener" target="_blank"><span class="arrow">→</span> open <span class="u">{{ n.url }}</span></a></p>
+  <dl class="meta">
+    <div><dt>domain</dt><dd>{{ n.domain }}</dd></div>
+    <div><dt>saved</dt><dd><time datetime="{{ n.iso }}">{{ n.datetime_local }}</time></dd></div>
+    <div><dt>tags</dt><dd>{% for t in n.tags %}<a class="tag" href="{{ base }}tags/{{ tag_slug(t) }}/">#{{ t }}</a>{% else %}<span class="dim">none</span>{% endfor %}</dd></div>
+  </dl>
+  <section class="prose">
+    <h2><span class="dim">##</span> summary</h2>
+    {% if n.summary_html %}{{ n.summary_html|safe }}{% else %}<p class="dim">no summary yet.</p>{% endif %}
+    {% if n.excerpt %}<h2><span class="dim">##</span> excerpt</h2><blockquote><p>{{ n.excerpt }}</p></blockquote>{% endif %}
+    {% if n.extra_html %}<div class="extra">{{ n.extra_html|safe }}</div>{% endif %}
+  </section>
+</article>
+{% if n.related %}
+<section class="related">
+  <h2 class="sect"><span class="dim">##</span> related <span class="dim">({{ n.related_kind }})</span></h2>
+  <div class="grid grid--sm">{% for r in n.related %}{{ card(r, small=True) }}{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% from "_macros.html" import card %}
+{% block title %}#{{ tag }} · {{ site_title }}{% endblock %}
+{% block cmd %}ls tags/{{ tag }}/{% endblock %}
+{% block main %}
+<p class="status"><a href="{{ base }}tags/" class="dim">← tags/</a> <span class="dim">·</span> <span class="tag">#{{ tag }}</span> <span class="dim">total {{ notes|length }}</span></p>
+<section class="grid" id="grid">{% for n in notes %}{{ card(n, lazy=loop.index > 4) }}{% endfor %}</section>
+{% endblock %}
