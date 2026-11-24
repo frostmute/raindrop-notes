@@ -6,6 +6,10 @@ raindrop_id: 1938586768
 created: 2026-11-21T22:39:23.300Z
 tags:
   - selfhost
+  - opensource
+  - agent
+  - assistant
+  - chat
 ---
 
 # nanobot - Ultra-Lightweight Open-Source AI Agent
