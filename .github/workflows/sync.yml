@@ -16,6 +16,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,13 +40,44 @@ jobs:
         run: node scripts/sync.mjs
 
       - name: Commit new notes
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add notes screenshots state.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Nothing new."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Add Raindrop notes $(date -u +%Y-%m-%dT%H:%MZ)"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+  # Rebuild and publish the site when the sync committed something. Pushes made
+  # with GITHUB_TOKEN don't trigger pages.yml, so the deploy runs here.
+  pages:
+    needs: sync
+    if: needs.sync.result == 'success' && needs.sync.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # the commit the sync job just pushed, not the run's start SHA
+      - uses: ./.github/actions/build-site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site/
+      - id: deployment
+        uses: actions/deploy-pages@v5
